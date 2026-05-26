@@ -121,9 +121,22 @@ def upgrade() -> None:
     )
     op.create_index("ix_notifications_alert_id", "notifications", ["alert_id"])
 
+    op.create_table(
+        "responders",
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
+                  server_default=sa.text("uuid_generate_v4()")),
+        sa.Column("name", sa.String(255), nullable=False),
+        sa.Column("phone", sa.String(30), nullable=False, unique=True),
+        sa.Column("region", sa.String(100)),
+        sa.Column("device_token", sa.String(512)),
+        sa.Column("is_active", sa.Boolean, server_default="true"),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+    )
+
 
 def downgrade() -> None:
     op.drop_table("notifications")
+    op.drop_table("responders")
     op.drop_table("planned_routes")
     op.drop_table("danger_zones")
     op.drop_table("alerts")
