@@ -1,0 +1,14 @@
+[Unit]
+Description=SAFE-NET Meshtastic Gateway
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/safe-net/mesh-gateway
+ExecStart=/usr/bin/python3 /opt/safe-net/mesh-gateway/gateway.py
+Restart=always
+RestartSec=5
+Environment=BACKEND_URL=http://localhost:8000/api/v1/alert/mesh-gateway
+
+[Install]
+WantedBy=multi-user.target

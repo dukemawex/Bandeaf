@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  api:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+  dashboard:
+    build: ./dashboard
+    command: npm run dev
+    ports:
+      - "3000:3000"
