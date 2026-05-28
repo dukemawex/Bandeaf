@@ -3,10 +3,14 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings
 from app.core.deps import create_access_token

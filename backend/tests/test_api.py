@@ -1,12 +1,20 @@
 from __future__ import annotations
 
-from app.services.store import STORE
+import hashlib
+import hmac
+import json
 
-from .conftest import build_hmac
+from app.core.config import settings
+from app.services.store import STORE
 
 
 def _auth_header(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+def build_hmac(payload: dict) -> str:
+    raw = json.dumps(payload).encode("utf-8")
+    return hmac.new(settings.MESH_GATEWAY_HMAC_SECRET.encode("utf-8"), raw, hashlib.sha256).hexdigest()
 
 
 def test_health(client):
