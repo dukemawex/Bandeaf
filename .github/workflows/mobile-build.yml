@@ -1,0 +1,22 @@
+name: mobile-build
+
+on:
+  push:
+    paths:
+      - mobile/**
+      - .github/workflows/mobile-build.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.2'
+      - run: flutter pub get
+        working-directory: mobile
+      - run: flutter analyze
+        working-directory: mobile
+      - run: flutter build apk --debug
+        working-directory: mobile

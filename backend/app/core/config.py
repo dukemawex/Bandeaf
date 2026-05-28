@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str | None = None
     TWILIO_AUTH_TOKEN: str | None = None
     FCM_SERVER_KEY: str | None = None
+    FCM_CREDENTIALS_FILE: str | None = None
     MESH_GATEWAY_HMAC_SECRET: str = "change-me"
     STARLINK_SSID: str | None = None
     SMS_SENDER_ID: str = "SAFE-NET"

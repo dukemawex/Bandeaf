@@ -1,9 +1,18 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
+
+import africastalking
+import firebase_admin
+from firebase_admin import credentials, initialize_app, messaging
+from twilio.rest import Client
 
 from app.core.config import settings
 from app.services.store import STORE
+
+logger = logging.getLogger("safenet.notifications")
+_firebase_ready = False
 
 
 def _mark_notification(alert_id: str, channel: str, recipient: str | None, status: str, error_message: str | None = None) -> None:
@@ -18,15 +27,50 @@ def _mark_notification(alert_id: str, channel: str, recipient: str | None, statu
 
 
 def send_sms(phone: str, message: str, alert_id: str | None = None) -> bool:
+    send_success = False
+    error: str | None = None
+    if settings.AFRICASTALKING_API_KEY and settings.AFRICASTALKING_USERNAME:
+        try:
+            africastalking.initialize(settings.AFRICASTALKING_USERNAME, settings.AFRICASTALKING_API_KEY)
+            africastalking.SMS.send(message, [phone], sender_id=settings.SMS_SENDER_ID)
+            send_success = True
+        except Exception as exc:
+            error = f"Africa's Talking failed: {exc.__class__.__name__}"
+            logger.warning(error)
+
+    if not send_success and settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN:
+        try:
+            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+            client.messages.create(to=phone, from_=settings.SMS_SENDER_ID, body=message)
+            send_success = True
+        except Exception as exc:
+            error = f"Twilio failed: {exc.__class__.__name__}"
+            logger.warning(error)
+
     if alert_id:
-        _mark_notification(alert_id, "sms", phone, "sent")
-    return True
+        _mark_notification(alert_id, "sms", phone, "sent" if send_success else "failed", error)
+    return send_success
 
 
 def send_push(device_token: str, title: str, body: str, alert_id: str | None = None) -> bool:
+    global _firebase_ready
+    success = False
+    error: str | None = None
+    if settings.FCM_CREDENTIALS_FILE:
+        try:
+            if not _firebase_ready and not firebase_admin._apps:
+                initialize_app(credentials.Certificate(settings.FCM_CREDENTIALS_FILE))
+                _firebase_ready = True
+            message = messaging.Message(notification=messaging.Notification(title=title, body=body), token=device_token)
+            messaging.send(message)
+            success = True
+        except Exception as exc:
+            error = f"FCM failed: {exc.__class__.__name__}"
+            logger.warning(error)
+
     if alert_id:
-        _mark_notification(alert_id, "fcm", device_token, "sent")
-    return True
+        _mark_notification(alert_id, "fcm", device_token, "sent" if success else "failed", error)
+    return success
 
 
 def notify_emergency_contacts(alert: dict) -> None:
